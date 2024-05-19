@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, url_for, redirect, flash
 import os
 import psycopg2
 from dotenv import load_dotenv
@@ -18,6 +18,7 @@ def conn_connection():
         password = password_db
         )
     return conn
+
 
 @app.route('/')
 def jokes():
@@ -46,8 +47,42 @@ def adding_joke():
         cur.close()
         conn.close()
 
-    return render_template('adding.html')
+        flash('Joke added successfully')
+        return render_template('adding.html')
 
+@app.route('/update-joke', methods=['POST', 'GET'])
+def update_joke(jokes):
+    if request.method == 'POST' or 'GET':
+        title = request.form('title')
+        author = request.form('author')
+        jokeText = request.form('jokeText')
+        id = request.form('id')
+
+        conn = conn_connection()
+        cur = conn.cursor()
+        cur.execute('UPDATE Jokes SET title=%s, author=%s, jokeText=%s WHERE id=%s', (title, author, jokeText, id))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return render_template('update.html', jokes=jokes)
+
+        
+
+
+@app.route('/delete-joke', methods=['POST'])
+def delete_joke():
+    if request.method == 'POST':
+        id = request.form('id')
+        conn = conn_connection()
+        cur = conn.cursor()
+        cur.execute('DELETE FROM Jokes WHERE id = %s', id)
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return redirect(url_for('jokes'))
 
 
 if __name__ == '__main__':
